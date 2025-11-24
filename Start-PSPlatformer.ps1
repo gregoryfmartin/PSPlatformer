@@ -17,14 +17,140 @@ Set-StrictMode -Version Latest
 #
 ###############################################################################
 
-
-$ErrorActionPreference = "Stop"
+###############################################################################
+#
+# DEFINE THE GLOBAL STATES
+#
+###############################################################################
+Enum GameState {
+    Init
+    SetupMap
+    GameLoop
+    GameWin
+    GameLose
+    Deinit
+}
 
 # CONSTANTS
 [Int]$Script:GRAVITY        = 1
 [Int]$Script:JUMP_STRENGTH  = -3
 [Int]$Script:MAX_FALL_SPEED = 2
 [Int]$Script:GAME_SPEED     = 30
+
+# GAME STATE MANAGEMENT
+[GameState]$Script:GlobalState = [GameState]::Init
+[GameState]$Script:PreviousGlobalState = $Script:GlobalState
+
+# STATE FUNCTIONS, DEFINED AS SCRIPT BLOCKS
+[ScriptBlock]$Script:GameStateInitAction = {
+    # DON'T DO ANYTHING HERE OTHER THAN TRANSITION THE STATE
+    Set-NextGameState SetupMap
+}
+
+[ScriptBlock]$Script:GameStateSetupMapAction = {
+    # RUN THE LOGIC THAT CONFIGURES THE (CURRENT) MAP
+    # REALLY, ALL WE'RE DOING HERE IS ENSURING THAT THE START POSITION
+    # CHARACTER IN THE MAP IS REMOVED SO THAT WE DON'T CAUSE A PROBLEM
+    # WHEN STARTING THE (CURRENT) MAP.
+    
+    For([Int]$R = 0; $R -LT $Script:MapHeight; $R++) {
+        If($Script:LevelData[$R].Contains('@')) {
+            $Script:Player.Y = $R
+            $Script:Player.X = $Script:LevelData[$R].IndexOf('@')
+
+            # REMOVE @ FROM MAP DATA SO WE DON'T COLLIDE WITH OUR SPAWN POINT
+            $Script:LevelData[$R] = $Script:LevelData[$R].Replace('@', ' ')
+        }
+    }
+    
+    # TRANSITION TO THE NEXT STATE
+    Set-NextGameState GameLoop
+}
+
+[ScriptBlock]$Script:GameStateGameLoopAction = {
+    $Key = $null
+    If([Console]::KeyAvailable -EQ $true) {
+        $Key = [Console]::ReadKey($true).Key
+        While([Console]::KeyAvailable -EQ $true) {
+            $Dummy = [Console]::ReadKey($true)
+        }
+    }
+
+    If($Key -EQ "Q") {
+        $Script:Running = $false
+    }
+
+    # HORIZONTAL MOVEMENT
+    If($Key -EQ "LeftArrow") {
+        $Script:Player.VX = -1
+    } ElseIf($Key -EQ "RightArrow") {
+        $Script:Player.VX = 1
+    } Else {
+        $Script:Player.VX = 0
+    }
+
+    # APPLY HORIZONTAL VELOCITY
+    [Int]$NextX = $Script:Player.X + $Script:Player.VX
+    If(-NOT (Test-Collision $NextX $Script:Player.Y)) {
+        $Script:Player.X = $NextX
+    }
+
+    # VERTICAL MOVEMENT (GRAVITY)
+    $Script:Player.VY += $Script:GRAVITY
+    
+    # CAP FALLING SPEED
+    If($Script:Player.VY -GT $Script:MAX_FALL_SPEED) {
+        $Script:Player.VY = $Script:MAX_FALL_SPEED
+    }
+
+    # JUMP HANDLER
+    If($Key -EQ "Spacebar" -AND $Script:Player.IsGrounded) {
+        $Script:Player.VY         = $Script:JUMP_STRENGTH
+        $Script:Player.IsGrounded = $false
+    }
+
+    # APPLY VERTICAL VELOCITY
+    [Int]$NextY = $Script:Player.Y + $Script:Player.VY
+    
+    # VERTICAL COLLISION DETECTION ATTEMPT...
+    If(Test-Collision $Script:Player.X $NextY) {
+        # MOVING DOWN...
+        If($Script:Player.VY -GT 0) {
+            $Script:Player.IsGrounded = $true
+        }
+
+        # MOVING UP...
+        $Script:Player.VY = 0 
+    } Else {
+        $Script:Player.Y          = $NextY
+        $Script:Player.IsGrounded = $false
+    }
+}
+
+[ScriptBlock]$Script:GameStateGameWinAction = {}
+
+[ScriptBlock]$Script:GameStateGameLoseAction = {}
+
+[ScriptBlock]$Script:GameStateDeinitAction = {}
+
+# MAP STATE FUNCTIONS WITH STATE
+[Hashtable]$Script:TheGameState = @{
+    [GameState]::Init = $Script:GameStateInitAction
+    [GameState]::SetupMap = $Script:GameStateSetupMapAction
+    [GameState]::GameLoop = $Script:GameStateGameLoopAction
+    [GameState]::GameWin = $Script:GameStateGameWinAction
+    [GameState]::GameLose = $Script:GameStateGameLoseAction
+    [GameState]::Deinit = $Script:GameStateDeinitAction
+}
+
+Function Set-NextGameState {
+    Param(
+        [GameState]$NextState
+    )
+    
+    $Script:PreviousGlobalState = $Script:GlobalState
+    $Script:GlobalState = $NextState
+}
 
 # # = WALL, SPACE = AIR, @ = THING, X = GOAL, ^ = BAD TERRAIN (NOT IMPLEMENTED)
 [String[]]$Script:LevelData = @(
@@ -55,7 +181,7 @@ $Script:Player = [PSCustomObject]@{
     VY         = 0
     IsGrounded = $false
     Symbol     = '@'
-    Color      = "Cyan"
+    Color      = 'Cyan'
 }
 
 For([Int]$R = 0; $R -LT $Script:MapHeight; $R++) {
@@ -130,7 +256,7 @@ Function Test-Collision {
     Return $false
 }
 
-Clear-Host
+# Clear-Host
 
 Write-Host "`e[?25l"
 
