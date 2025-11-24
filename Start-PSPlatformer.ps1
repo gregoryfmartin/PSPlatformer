@@ -36,6 +36,8 @@ Enum GameState {
 [Int]$Script:JUMP_STRENGTH  = -3
 [Int]$Script:MAX_FALL_SPEED = 2
 [Int]$Script:GAME_SPEED     = 30
+[Boolean]$Script:Running = $true
+[Boolean]$Script:Victory = $false
 
 # GAME STATE MANAGEMENT
 [GameState]$Script:GlobalState = [GameState]::Init
@@ -77,7 +79,13 @@ Enum GameState {
     }
 
     If($Key -EQ "Q") {
-        $Script:Running = $false
+        # CHANGE THE GAME STATE TO GAMELOSE
+        # I KNOW, THE PLAYER DIDN'T ACTUALLY LOSE,
+        # BUT THEY NEED TO FEEL BAD FOR QUITTING.
+        # WE AVOID TERMINATING THE GAME LOOP HERE
+        # BECAUSE THAT'S NOT WHAT THIS STATE SHOULD
+        # BE DOING.
+        Set-NextGameState GameLose
     }
 
     # HORIZONTAL MOVEMENT
@@ -127,22 +135,44 @@ Enum GameState {
     }
 }
 
-[ScriptBlock]$Script:GameStateGameWinAction = {}
+[ScriptBlock]$Script:GameStateGameWinAction = {
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
+    Write-Host 'GOT ''EM!' -ForegroundColor Green
 
-[ScriptBlock]$Script:GameStateGameLoseAction = {}
-
-[ScriptBlock]$Script:GameStateDeinitAction = {}
-
-# MAP STATE FUNCTIONS WITH STATE
-[Hashtable]$Script:TheGameState = @{
-    [GameState]::Init = $Script:GameStateInitAction
-    [GameState]::SetupMap = $Script:GameStateSetupMapAction
-    [GameState]::GameLoop = $Script:GameStateGameLoopAction
-    [GameState]::GameWin = $Script:GameStateGameWinAction
-    [GameState]::GameLose = $Script:GameStateGameLoseAction
-    [GameState]::Deinit = $Script:GameStateDeinitAction
+    Set-NextGameState Deinit
 }
 
+[ScriptBlock]$Script:GameStateGameLoseAction = {
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
+    Write-Host 'YOU SUCK!' -ForegroundColor Yellow
+
+    Set-NextGameState Deinit
+}
+
+[ScriptBlock]$Script:GameStateDeinitAction = {
+    [Console]::CursorVisible = $true
+    $Script:Running = $false
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 4)
+}
+
+# MAP STATE FUNCTIONS WITH STATE
+[Hashtable]$Script:TheGameStateTable = @{
+    [GameState]::Init     = $Script:GameStateInitAction
+    [GameState]::SetupMap = $Script:GameStateSetupMapAction
+    [GameState]::GameLoop = $Script:GameStateGameLoopAction
+    [GameState]::GameWin  = $Script:GameStateGameWinAction
+    [GameState]::GameLose = $Script:GameStateGameLoseAction
+    [GameState]::Deinit   = $Script:GameStateDeinitAction
+}
+
+<#
+.SYNOPSIS
+TRANSITIONS THE CURRENT STATE OF THE GAME TO THE ONE SPECIFIED BY THE CALLER,
+ENSURING THE PREVIOUS STATE IS RETAINED.
+
+.PARAM NextState
+THE NEW STATE TO TRANSITION TO. BOUND TO THE ENUMERATION GAMESTATE.
+#>
 Function Set-NextGameState {
     Param(
         [GameState]$NextState
@@ -183,19 +213,6 @@ $Script:Player = [PSCustomObject]@{
     Symbol     = '@'
     Color      = 'Cyan'
 }
-
-For([Int]$R = 0; $R -LT $Script:MapHeight; $R++) {
-    If($Script:LevelData[$R].Contains('@')) {
-        $Script:Player.Y = $R
-        $Script:Player.X = $Script:LevelData[$R].IndexOf('@')
-
-        # REMOVE @ FROM MAP DATA SO WE DON'T COLLIDE WITH OUR SPAWN POINT
-        $Script:LevelData[$R] = $Script:LevelData[$R].Replace('@', ' ')
-    }
-}
-
-$Script:Running = $true
-$Script:Victory = $false
 
 Function Draw-Screen {    
     [Console]::SetCursorPosition(0, 0)
@@ -243,8 +260,7 @@ Function Test-Collision {
     [Char]$C = $Script:LevelData[$Y][$X]
     
     If($C -EQ 'X') {
-        $Script:Victory = $true
-        $Script:Running = $false
+        Set-NextGameState GameWin
 
         Return $false
     }
@@ -256,81 +272,16 @@ Function Test-Collision {
     Return $false
 }
 
-# Clear-Host
+Clear-Host
 
 Write-Host "`e[?25l"
 
 Try {
     While($Script:Running) {
-        $Key = $null
-        If([Console]::KeyAvailable -EQ $true) {
-            $Key = [Console]::ReadKey($true).Key
-            While([Console]::KeyAvailable -EQ $true) {
-                $Dummy = [Console]::ReadKey($true)
-            }
-        }
-
-        If($Key -EQ "Q") {
-            $Script:Running = $false
-        }
-
-        # HORIZONTAL MOVEMENT
-        If($Key -EQ "LeftArrow") {
-            $Script:Player.VX = -1
-        } ElseIf($Key -EQ "RightArrow") {
-            $Script:Player.VX = 1
-        } Else {
-            $Script:Player.VX = 0
-        }
-
-        # APPLY HORIZONTAL VELOCITY
-        [Int]$NextX = $Script:Player.X + $Script:Player.VX
-        If(-NOT (Test-Collision $NextX $Script:Player.Y)) {
-            $Script:Player.X = $NextX
-        }
-
-        # VERTICAL MOVEMENT (GRAVITY)
-        $Script:Player.VY += $Script:GRAVITY
-        
-        # CAP FALLING SPEED
-        If($Script:Player.VY -GT $Script:MAX_FALL_SPEED) {
-            $Script:Player.VY = $Script:MAX_FALL_SPEED
-        }
-
-        # JUMP HANDLER
-        If($Key -EQ "Spacebar" -AND $Script:Player.IsGrounded) {
-            $Script:Player.VY         = $Script:JUMP_STRENGTH
-            $Script:Player.IsGrounded = $false
-        }
-
-        # APPLY VERTICAL VELOCITY
-        [Int]$NextY = $Script:Player.Y + $Script:Player.VY
-        
-        # VERTICAL COLLISION DETECTION ATTEMPT...
-        If(Test-Collision $Script:Player.X $NextY) {
-            # MOVING DOWN...
-            If($Script:Player.VY -GT 0) {
-                $Script:Player.IsGrounded = $true
-            }
-
-            # MOVING UP...
-            $Script:Player.VY = 0 
-        } Else {
-            $Script:Player.Y          = $NextY
-            $Script:Player.IsGrounded = $false
-        }
+        & $Script:TheGameStateTable[$Script:GlobalState]
 
         Draw-Screen
 
         Start-Sleep -Milliseconds $Script:GAME_SPEED
     }
-
-    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
-    If($Script:Victory) {
-        Write-Host 'GOT ''EM!' -ForegroundColor Green
-    } Else {
-        Write-Host 'YOU SUCK!' -ForegroundColor Yellow
-    }
-} Finally {
-    [Console]::CursorVisible = $true
-}
+} Finally {}
