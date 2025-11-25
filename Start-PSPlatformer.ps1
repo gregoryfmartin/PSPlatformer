@@ -31,16 +31,19 @@ Enum GameState {
     Deinit
 }
 
-# CONSTANTS
+# GLOBALS
 [Int]$Script:GRAVITY        = 1
 [Int]$Script:JUMP_STRENGTH  = -3
 [Int]$Script:MAX_FALL_SPEED = 2
 [Int]$Script:GAME_SPEED     = 30
-[Boolean]$Script:Running = $true
-[Boolean]$Script:Victory = $false
+[Int]$Script:CurrentLevel   = -1
+[Int]$Script:MapHeight      = 0
+[Int]$Script:MapWidth       = 0
+[Boolean]$Script:Running    = $true
+[Boolean]$Script:Victory    = $false
 
 # GAME STATE MANAGEMENT
-[GameState]$Script:GlobalState = [GameState]::Init
+[GameState]$Script:GlobalState         = [GameState]::Init
 [GameState]$Script:PreviousGlobalState = $Script:GlobalState
 
 # STATE FUNCTIONS, DEFINED AS SCRIPT BLOCKS
@@ -50,18 +53,25 @@ Enum GameState {
 }
 
 [ScriptBlock]$Script:GameStateSetupMapAction = {
+    # INCREMENT THE LEVEL COUNTER
+    $Script:CurrentLevel += 1
+    
+    # GENERATE THE DIMENSIONS DATA
+    $Script:MapHeight = $Script:LevelData[$Script:CurrentLevel].Count
+    $Script:MapWidth  = $Script:LevelData[$Script:CurrentLevel][0].Length
+
     # RUN THE LOGIC THAT CONFIGURES THE (CURRENT) MAP
     # REALLY, ALL WE'RE DOING HERE IS ENSURING THAT THE START POSITION
     # CHARACTER IN THE MAP IS REMOVED SO THAT WE DON'T CAUSE A PROBLEM
     # WHEN STARTING THE (CURRENT) MAP.
     
     For([Int]$R = 0; $R -LT $Script:MapHeight; $R++) {
-        If($Script:LevelData[$R].Contains('@')) {
+        If($Script:LevelData[$Script:CurrentLevel][$R].Contains('@')) {
             $Script:Player.Y = $R
-            $Script:Player.X = $Script:LevelData[$R].IndexOf('@')
+            $Script:Player.X = $Script:LevelData[$Script:CurrentLevel][$R].IndexOf('@')
 
             # REMOVE @ FROM MAP DATA SO WE DON'T COLLIDE WITH OUR SPAWN POINT
-            $Script:LevelData[$R] = $Script:LevelData[$R].Replace('@', ' ')
+            $Script:LevelData[$Script:CurrentLevel][$R] = $Script:LevelData[$Script:CurrentLevel][$R].Replace('@', ' ')
         }
     }
     
@@ -138,14 +148,20 @@ Enum GameState {
 [ScriptBlock]$Script:GameStateGameWinAction = {
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
     Write-Host 'GOT ''EM!' -ForegroundColor Green
-
-    Set-NextGameState Deinit
+    
+    If($Script:CurrentLevel -LT $Script:LevelData.Length - 1) {
+        Start-Sleep -Seconds 1.0
+        Set-NextGameState SetupMap
+    } Else {
+        Set-NextGameState Deinit
+    }
 }
 
 [ScriptBlock]$Script:GameStateGameLoseAction = {
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
     Write-Host 'YOU SUCK!' -ForegroundColor Yellow
 
+    Start-Sleep -Seconds 1.0
     Set-NextGameState Deinit
 }
 
@@ -183,6 +199,7 @@ Function Set-NextGameState {
 }
 
 # # = WALL, SPACE = AIR, @ = THING, X = GOAL, ^ = BAD TERRAIN (NOT IMPLEMENTED)
+<#
 [String[]]$Script:LevelData = @(
     "############################################################",
     "#                                                          #",
@@ -200,9 +217,112 @@ Function Set-NextGameState {
     "#^^^#                                                      #",
     "############################################################"
 )
+#>
 
-[Int]$Script:MapHeight = $Script:LevelData.Count
-[Int]$Script:MapWidth  = $Script:LevelData[0].Length
+[String[][]]$Script:LevelData = @(
+    @(
+        "############################################################",
+        "#                                                          #",
+        "#                                                          #",
+        "#      @                                                   #",
+        "#    #####                                           X     #",
+        "#                                              #############",
+        "#           ####                               #           #",
+        "#                  #                           #           #",
+        "#                 ###             #  ###       #           #",
+        "#                                 #            #           #",
+        "#        ###             ###      #            #           #",
+        "#    #                            #            #           #",
+        "#    #                            ##############           #",
+        "#    #                                                     #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                      X   #",
+        "#                                                    ####  #",
+        "#                                                ####      #",
+        "#                                            ####          #",
+        "#                                        ####              #",
+        "#                                    ####                  #",
+        "#                                ####                      #",
+        "#                            ####                          #",
+        "#                        ####                              #",
+        "#                    ####                                  #",
+        "#      @         ####                                      #",
+        "#    #####   ####                                          #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                          #",
+        "#                                                          #",
+        "#  @                                                    X  #",
+        "# ###     ###     ###     ###     ###     ###     #######  #",
+        "#                                                          #",
+        "#                                                          #",
+        "#      #       #       #       #       #       #           #",
+        "#                                                          #",
+        "#                                                          #",
+        "#    #####   #####   #####   #####   #####   #####         #",
+        "#                                                          #",
+        "#                                                          #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                          #",
+        "####### ############################################ #######",
+        "#                                                          #",
+        "#   @      #                                    #      X   #",
+        "########## #   ##############################   # ##########",
+        "#          #                                    #          #",
+        "#   ########   ##############################   ########   #",
+        "#                                                          #",
+        "#              #                            #              #",
+        "################   ######################   ################",
+        "#                                                          #",
+        "#                                                          #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                          #",
+        "#      @                                             X     #",
+        "#    #####                                         #####   #",
+        "#             ###                           ###            #",
+        "#                                                          #",
+        "#                     ###           ###                    #",
+        "#                                                          #",
+        "#             ###                           ###            #",
+        "#                                                          #",
+        "#    #####                                         #####   #",
+        "#             ###                           ###            #",
+        "#                     ###           ###                    #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#      @                                             X     #",
+        "#    #####               ############              #####   #",
+        "#                        #          #                      #",
+        "#          ####          #          #          ####        #",
+        "#                        #          #                      #",
+        "#      ####              #          #              ####    #",
+        "#                        #          #                      #",
+        "#          ####          #          #          ####        #",
+        "#                        #          #                      #",
+        "#      ####              #          #              ####    #",
+        "#                        #          #                      #",
+        "#                        #          #                      #",
+        "#                        #          #                      #",
+        "############################################################"
+    )
+)
 
 $Script:Player = [PSCustomObject]@{
     X          = 2
@@ -220,7 +340,7 @@ Function Draw-Screen {
     [List[String]]$Frame = [List[String]]::new()
 
     For([Int]$Y = 0; $Y -LT $Script:MapHeight; $Y++) {
-        [Char[]]$Line = $Script:LevelData[$Y].ToCharArray()
+        [Char[]]$Line = $Script:LevelData[$Script:CurrentLevel][$Y].ToCharArray()
         
         # DRAW PLAYER IF ON THIS LINE
         If($Y -EQ $Script:Player.Y) {
@@ -257,7 +377,7 @@ Function Test-Collision {
         Return $true
     }
     
-    [Char]$C = $Script:LevelData[$Y][$X]
+    [Char]$C = $Script:LevelData[$Script:CurrentLevel][$Y][$X]
     
     If($C -EQ 'X') {
         Set-NextGameState GameWin
