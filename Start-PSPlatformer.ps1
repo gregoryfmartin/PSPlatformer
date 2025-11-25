@@ -197,7 +197,7 @@ Function Set-NextGameState {
     "#        ###             ###      #            #           #",
     "#                                 #            #           #",
     "#   #                             ##############           #",
-    "#   #                                                      #",
+    "#^^^#                                                      #",
     "############################################################"
 )
 
@@ -262,6 +262,12 @@ Function Test-Collision {
     If($C -EQ 'X') {
         Set-NextGameState GameWin
 
+        Return $false
+    }
+    
+    If($C -EQ '^') {
+        Set-NextGameState GameLose
+        
         Return $false
     }
 
