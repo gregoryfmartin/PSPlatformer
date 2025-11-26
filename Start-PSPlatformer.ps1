@@ -22,8 +22,8 @@ $ErrorActionPreference = "Stop"
 
 # CONSTANTS
 [Int]$Script:GRAVITY        = 1
-[Int]$Script:JUMP_STRENGTH  = -3
-[Int]$Script:MAX_FALL_SPEED = 2
+[Int]$Script:JUMP_STRENGTH  = -4
+[Int]$Script:MAX_FALL_SPEED = 1
 [Int]$Script:GAME_SPEED     = 30
 
 # # = WALL, SPACE = AIR, @ = THING, X = GOAL, ^ = BAD TERRAIN (NOT IMPLEMENTED)
@@ -115,16 +115,17 @@ Function Test-Collision {
         Return $true
     }
     
-    [Char]$C = $Script:LevelData[$Y][$X]
+    # grab the next character at the specified position
+    [Char]$Character = $Script:LevelData[$Y][$X]
     
-    If($C -EQ 'X') {
+    If($Character -EQ 'X') {
         $Script:Victory = $true
         $Script:Running = $false
 
         Return $false
     }
 
-    If($C -EQ '#') {
+    If($Character -EQ '#') {
         Return $true
     }
     
