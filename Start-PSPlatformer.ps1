@@ -1,6 +1,8 @@
 using namespace System
 using namespace System.Collections.Generic
 
+#requires -Module @{ ModuleName="FancyClearHost"; ModuleVersion="0.1.0" }
+
 Set-StrictMode -Version Latest
 
 ###############################################################################
@@ -159,9 +161,11 @@ Enum GameState {
 
 [ScriptBlock]$Script:GameStateGameLoseAction = {
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
-    Write-Host 'YOU SUCK!' -ForegroundColor Yellow
+    Write-Host 'YOU SUCK!' -ForegroundColor Red
 
     Start-Sleep -Seconds 1.0
+    
+    Clear-HostFancily -Mode Falling
     Set-NextGameState Deinit
 }
 
