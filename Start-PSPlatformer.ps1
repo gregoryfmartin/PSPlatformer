@@ -31,14 +31,14 @@ $ErrorActionPreference = "Stop"
     "############################################################",
     "#                                                          #",
     "#                                                          #",
-    "#      @                                                   #",
-    "#    #####                                           X     #",
+    "#                                                          #",
+    "#    #####                                   #       X     #",
     "#                                              #############",
     "#           ####                               #           #",
-    "#                  #                           #           #",
+    "#                  #                        #  #           #",
     "#                 ###             #  ###       #           #",
     "#                                 #            #           #",
-    "#        ###             ###      #            #           #",
+    "#        ###             ###      #       #    #           #",
     "#                                 #            #           #",
     "#   #                             ##############           #",
     "#   #                                                      #",
@@ -54,7 +54,7 @@ $Script:Player = [PSCustomObject]@{
     VX         = 0
     VY         = 0
     IsGrounded = $false
-    Symbol     = '@'
+    Symbol     = '!'
     Color      = "Cyan"
 }
 
@@ -90,7 +90,7 @@ Function Draw-Screen {
         $Frame.Add([String]::new($Line))
     }
 
-    $Frame.Add("POS: $($Script:Player.X),$($Script:Player.Y) | SPACE: Jump | Q: Quit")
+    $Frame.Add("POS: $($Script:Player.X),$($Script:Player.Y) | SPACE: Jump | Q: Quit ")
     
     ForEach($L in $Frame) {
         If($L -MATCH 'X') {
