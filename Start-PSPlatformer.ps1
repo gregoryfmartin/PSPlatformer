@@ -202,26 +202,7 @@ Function Set-NextGameState {
     $Script:GlobalState = $NextState
 }
 
-# # = WALL, SPACE = AIR, @ = THING, X = GOAL, ^ = BAD TERRAIN (NOT IMPLEMENTED)
-<#
-[String[]]$Script:LevelData = @(
-    "############################################################",
-    "#                                                          #",
-    "#                                                          #",
-    "#      @                                                   #",
-    "#    #####                                           X     #",
-    "#                                              #############",
-    "#           ####                               #           #",
-    "#                  #                         # #           #",
-    "#                 ###             #  ###    #  #           #",
-    "#                                 #            #           #",
-    "#        ###             ###      #       #    #           #",
-    "#                                 #            #           #",
-    "#   #                             ##############           #",
-    "#^^^#                                                      #",
-    "############################################################"
-)
-#>
+# # = WALL, SPACE = AIR, @ = THING, X = GOAL, ^ = BAD TERRAIN
 
 [String[][]]$Script:LevelData = @(
     @(
