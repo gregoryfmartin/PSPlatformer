@@ -17,36 +17,285 @@ Set-StrictMode -Version Latest
 #
 ###############################################################################
 
-
-$ErrorActionPreference = "Stop"
+Enum GameState {
+    Init
+    SetupMap
+    GameLoop
+    GameWin
+    GameLose
+    Deinit
+}
 
 # CONSTANTS
 [Int]$Script:GRAVITY        = 1
 [Int]$Script:JUMP_STRENGTH  = -4
 [Int]$Script:MAX_FALL_SPEED = 1
 [Int]$Script:GAME_SPEED     = 30
+[Int]$Script:CurrentLevel = -1
+[Int]$Script:MapHeight = 0
+[Int]$Script:MapWidth = 0
+[Boolean]$Script:Running = 0
 
-# # = WALL, SPACE = AIR, @ = THING, X = GOAL, ^ = BAD TERRAIN (NOT IMPLEMENTED)
-[String[]]$Script:LevelData = @(
-    "############################################################",
-    "#                                                          #",
-    "#                                                          #",
-    "#                                                          #",
-    "#    #####                                   #       X     #",
-    "#                                              #############",
-    "#           ####                               #           #",
-    "#                  #                        #  #           #",
-    "#                 ###             #  ###       #           #",
-    "#                                 #            #           #",
-    "#        ###             ###      #       #    #           #",
-    "#                                 #            #           #",
-    "#   #                             ##############           #",
-    "#   #                                                      #",
-    "############################################################"
+[GameState]$Script:GlobalState = [GameState]::Init
+[GameState]$Script:PreviousGlobalState = $Script:GlobalState
+
+[ScriptBlock]$Script:GameStateInitAction = {
+    # DON'T DO ANYTHING HERE OTHER THAN TRANSITION THE STATE
+    Set-NextGameState SetupMap
+}
+
+[ScriptBlock]$Script:GameStateSetupMapAction = {
+    # INCREMENT THE LEVEL COUNTER
+    $Script:CurrentLevel += 1
+    
+    # GENERATE THE DIMENSIONS DATA
+    $Script:MapHeight = $Script:LevelData[$Script:CurrentLevel].Count
+    $Script:MapWidth  = $Script:LevelData[$Script:CurrentLevel][0].Length
+
+    # RUN THE LOGIC THAT CONFIGURES THE (CURRENT) MAP
+    # REALLY, ALL WE'RE DOING HERE IS ENSURING THAT THE START POSITION
+    # CHARACTER IN THE MAP IS REMOVED SO THAT WE DON'T CAUSE A PROBLEM
+    # WHEN STARTING THE (CURRENT) MAP.
+    
+    For([Int]$R = 0; $R -LT $Script:MapHeight; $R++) {
+        If($Script:LevelData[$Script:CurrentLevel][$R].Contains('@')) {
+            $Script:Player.Y = $R
+            $Script:Player.X = $Script:LevelData[$Script:CurrentLevel][$R].IndexOf('@')
+
+            # REMOVE @ FROM MAP DATA SO WE DON'T COLLIDE WITH OUR SPAWN POINT
+            $Script:LevelData[$Script:CurrentLevel][$R] = $Script:LevelData[$Script:CurrentLevel][$R].Replace('@', ' ')
+        }
+    }
+    
+    # TRANSITION TO THE NEXT STATE
+    Set-NextGameState GameLoop
+}
+
+[ScriptBlock]$Script:GameStateGameLoopAction = {
+    $Key = $null
+    If([Console]::KeyAvailable -EQ $true) {
+        $Key = [Console]::ReadKey($true).Key
+        While([Console]::KeyAvailable -EQ $true) {
+            $Dummy = [Console]::ReadKey($true)
+        }
+    }
+
+    If($Key -EQ "Q") {
+        # CHANGE THE GAME STATE TO GAMELOSE
+        # I KNOW, THE PLAYER DIDN'T ACTUALLY LOSE,
+        # BUT THEY NEED TO FEEL BAD FOR QUITTING.
+        # WE AVOID TERMINATING THE GAME LOOP HERE
+        # BECAUSE THAT'S NOT WHAT THIS STATE SHOULD
+        # BE DOING.
+        Set-NextGameState GameLose
+    }
+
+    # HORIZONTAL MOVEMENT
+    If($Key -EQ "LeftArrow") {
+        $Script:Player.VX = -1
+    } ElseIf($Key -EQ "RightArrow") {
+        $Script:Player.VX = 1
+    } Else {
+        $Script:Player.VX = 0
+    }
+
+    # APPLY HORIZONTAL VELOCITY
+    [Int]$NextX = $Script:Player.X + $Script:Player.VX
+    If(-NOT (Test-Collision $NextX $Script:Player.Y)) {
+        $Script:Player.X = $NextX
+    }
+
+    # VERTICAL MOVEMENT (GRAVITY)
+    $Script:Player.VY += $Script:GRAVITY
+    
+    # CAP FALLING SPEED
+    If($Script:Player.VY -GT $Script:MAX_FALL_SPEED) {
+        $Script:Player.VY = $Script:MAX_FALL_SPEED
+    }
+
+    # JUMP HANDLER
+    If($Key -EQ "Spacebar" -AND $Script:Player.IsGrounded) {
+        $Script:Player.VY         = $Script:JUMP_STRENGTH
+        $Script:Player.IsGrounded = $false
+    }
+
+    # APPLY VERTICAL VELOCITY
+    [Int]$NextY = $Script:Player.Y + $Script:Player.VY
+    
+    # VERTICAL COLLISION DETECTION ATTEMPT...
+    If(Test-Collision $Script:Player.X $NextY) {
+        # MOVING DOWN...
+        If($Script:Player.VY -GT 0) {
+            $Script:Player.IsGrounded = $true
+        }
+
+        # MOVING UP...
+        $Script:Player.VY = 0 
+    } Else {
+        $Script:Player.Y          = $NextY
+        $Script:Player.IsGrounded = $false
+    }
+}
+
+[ScriptBlock]$Script:GameStateGameWinAction = {
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
+    Write-Host 'GOT ''EM!' -ForegroundColor Green
+    
+    If($Script:CurrentLevel -LT $Script:LevelData.Length - 1) {
+        Start-Sleep -Seconds 1.0
+        Set-NextGameState SetupMap
+    } Else {
+        Set-NextGameState Deinit
+    }
+}
+
+[ScriptBlock]$Script:GameStateGameLoseAction = {
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
+    Write-Host 'YOU SUCK!' -ForegroundColor Red
+
+    Start-Sleep -Seconds 1.0
+    
+    Clear-HostFancily -Mode Falling
+    Set-NextGameState Deinit
+}
+
+[ScriptBlock]$Script:GameStateDeinitAction = {
+    [Console]::CursorVisible = $true
+    $Script:Running = $false
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 4)
+}
+
+# MAP STATE FUNCTIONS WITH STATE
+[Hashtable]$Script:TheGameStateTable = @{
+    [GameState]::Init     = $Script:GameStateInitAction
+    [GameState]::SetupMap = $Script:GameStateSetupMapAction
+    [GameState]::GameLoop = $Script:GameStateGameLoopAction
+    [GameState]::GameWin  = $Script:GameStateGameWinAction
+    [GameState]::GameLose = $Script:GameStateGameLoseAction
+    [GameState]::Deinit   = $Script:GameStateDeinitAction
+}
+
+<#
+.SYNOPSIS
+TRANSITIONS THE CURRENT STATE OF THE GAME TO THE ONE SPECIFIED BY THE CALLER,
+ENSURING THE PREVIOUS STATE IS RETAINED.
+
+.PARAM NextState
+THE NEW STATE TO TRANSITION TO. BOUND TO THE ENUMERATION GAMESTATE.
+#>
+Function Set-NextGameState {
+    Param(
+        [GameState]$NextState
+    )
+    
+    $Script:PreviousGlobalState = $Script:GlobalState
+    $Script:GlobalState = $NextState
+}
+
+[String[][]]$Script:LevelData = @(
+    @(
+        "############################################################",
+        "#                                                          #",
+        "#                                                          #",
+        "#      @                                                   #",
+        "#    #####                                           X     #",
+        "#                                              #############",
+        "#           ####                               #           #",
+        "#                  #                         # #           #",
+        "#                 ###             #  ###    #  #           #",
+        "#                               # #            #           #",
+        "#        ###             ###      #       #    #           #",
+        "#    #                            #            #           #",
+        "#    #                        #   ##############           #",
+        "#    #                 ^                                   #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                    #     #",
+        "#                                                  X ####  #",
+        "#                                                ####      #",
+        "#                                            ####          #",
+        "#                                        ####              #",
+        "#                                    ####                  #",
+        "#                                ####                      #",
+        "#                            ####                          #",
+        "#                        ####                              #",
+        "#                    ####                                  #",
+        "#      @         ####                                      #",
+        "#    #####   ####                                          #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                          #",
+        "#                                                          #",
+        "#  @                                                    X  #",
+        "# ###     ###     ###     ###     ###     ###     #######  #",
+        "#                                                          #",
+        "#                                                          #",
+        "#      #       #       #       #       #       #           #",
+        "#                                                          #",
+        "#                                                          #",
+        "#    #####   #####   #####   #####   #####   #####         #",
+        "#                                                          #",
+        "#                                                          #",
+        "#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                          #",
+        "####### ############################################ #######",
+        "#                                                          #",
+        "#   @      #                                    #      X   #",
+        "########## #   ##############################   # ##########",
+        "#          #                                    #          #",
+        "#   ########   ##############################   ########   #",
+        "#                                                          #",
+        "#              #                            #              #",
+        "################   ######################   ################",
+        "#                                                          #",
+        "#                                                          #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#                                                          #",
+        "#      @                                             X     #",
+        "#    #####                                         #####   #",
+        "#             ###                           ###            #",
+        "#                                                          #",
+        "#                     ###           ###                    #",
+        "#                                                          #",
+        "#             ###                           ###            #",
+        "#                                                          #",
+        "#    #####                                         #####   #",
+        "#             ###                           ###            #",
+        "#                     ###           ###                    #",
+        "#                                                          #",
+        "############################################################"
+    ),
+    @(
+        "############################################################",
+        "#      @                                             X     #",
+        "#    #####               ############              #####   #",
+        "#                        #          #                      #",
+        "#          ####          #          #          ####        #",
+        "#                        #          #                      #",
+        "#      ####              #          #              ####    #",
+        "#                        #          #                      #",
+        "#          ####          #          #          ####        #",
+        "#                        #          #                      #",
+        "#      ####              #          #              ####    #",
+        "#                        #          #                      #",
+        "#                        #          #                      #",
+        "#                        #          #                      #",
+        "############################################################"
+    )
 )
-
-[Int]$Script:MapHeight = $Script:LevelData.Count
-[Int]$Script:MapWidth  = $Script:LevelData[0].Length
 
 $Script:Player = [PSCustomObject]@{
     X          = 2
@@ -58,27 +307,13 @@ $Script:Player = [PSCustomObject]@{
     Color      = "Cyan"
 }
 
-# FIND PLAYER SPAWN POINT
-For([Int]$R = 0; $R -LT $Script:MapHeight; $R++) {
-    If($Script:LevelData[$R].Contains($Script:Player.Symbol)) {
-        $Script:Player.Y = $R
-        $Script:Player.X = $Script:LevelData[$R].IndexOf($Script:Player.Symbol)
-
-        # REMOVE @ FROM MAP DATA SO WE DON'T COLLIDE WITH OUR SPAWN POINT
-        $Script:LevelData[$R] = $Script:LevelData[$R].Replace($script:Player.Symbol, ' ')
-    }
-}
-
-$Script:Running = $true
-$Script:Victory = $false
-
 Function Draw-Screen {    
     [Console]::SetCursorPosition(0, 0)
     
     [List[String]]$Frame = [List[String]]::new()
 
     For([Int]$Y = 0; $Y -LT $Script:MapHeight; $Y++) {
-        [Char[]]$Line = $Script:LevelData[$Y].ToCharArray()
+        [Char[]]$Line = $Script:LevelData[$Script:CurrentLevel][$Y].ToCharArray()
         
         # DRAW PLAYER IF ON THIS LINE
         If($Y -EQ $Script:Player.Y) {
@@ -90,12 +325,12 @@ Function Draw-Screen {
         $Frame.Add([String]::new($Line))
     }
 
-    $Frame.Add("POS: $($Script:Player.X),$($Script:Player.Y) | SPACE: Jump | Q: Quit ")
+    $Frame.Add("POS: $($Script:Player.X),$($Script:Player.Y) | SPACE: Jump | Q: Quit")
     
     ForEach($L in $Frame) {
         If($L -MATCH 'X') {
             Write-Host $L -ForegroundColor Yellow -NoNewline
-        } ElseIf($L -MATCH $Script:Player.Symbol) { 
+        } ElseIf($L -MATCH '@') { 
             Write-Host $L -ForegroundColor Cyan -NoNewline 
         } Else {
             Write-Host $L -ForegroundColor Gray -NoNewline
@@ -115,17 +350,21 @@ Function Test-Collision {
         Return $true
     }
     
-    # grab the next character at the specified position
-    [Char]$Character = $Script:LevelData[$Y][$X]
+    [Char]$C = $Script:LevelData[$Script:CurrentLevel][$Y][$X]
     
-    If($Character -EQ 'X') {
-        $Script:Victory = $true
-        $Script:Running = $false
+    If($C -EQ 'X') {
+        Set-NextGameState GameWin
 
         Return $false
     }
+    
+    If($C -EQ '^') {
+        Set-NextGameState GameLose
+        
+        Return $false
+    }
 
-    If($Character -EQ '#') {
+    If($C -EQ '#') {
         Return $true
     }
     
@@ -138,75 +377,10 @@ Write-Host "`e[?25l"
 
 Try {
     While($Script:Running) {
-        $Key = $null
-        If([Console]::KeyAvailable -EQ $true) {
-            $Key = [Console]::ReadKey($true).Key
-            While([Console]::KeyAvailable -EQ $true) {
-                $Dummy = [Console]::ReadKey($true)
-            }
-        }
-
-        If($Key -EQ "Q") {
-            $Script:Running = $false
-        }
-
-        # HORIZONTAL MOVEMENT
-        If($Key -EQ "LeftArrow") {
-            $Script:Player.VX = -1
-        } ElseIf($Key -EQ "RightArrow") {
-            $Script:Player.VX = 1
-        } Else {
-            $Script:Player.VX = 0
-        }
-
-        # APPLY HORIZONTAL VELOCITY
-        [Int]$NextX = $Script:Player.X + $Script:Player.VX
-        If(-NOT (Test-Collision $NextX $Script:Player.Y)) {
-            $Script:Player.X = $NextX
-        }
-
-        # VERTICAL MOVEMENT (GRAVITY)
-        $Script:Player.VY += $Script:GRAVITY
-        
-        # CAP FALLING SPEED
-        If($Script:Player.VY -GT $Script:MAX_FALL_SPEED) {
-            $Script:Player.VY = $Script:MAX_FALL_SPEED
-        }
-
-        # JUMP HANDLER
-        If($Key -EQ "Spacebar" -AND $Script:Player.IsGrounded) {
-            $Script:Player.VY         = $Script:JUMP_STRENGTH
-            $Script:Player.IsGrounded = $false
-        }
-
-        # APPLY VERTICAL VELOCITY
-        [Int]$NextY = $Script:Player.Y + $Script:Player.VY
-        
-        # VERTICAL COLLISION DETECTION ATTEMPT...
-        If(Test-Collision $Script:Player.X $NextY) {
-            # MOVING DOWN...
-            If($Script:Player.VY -GT 0) {
-                $Script:Player.IsGrounded = $true
-            }
-
-            # MOVING UP...
-            $Script:Player.VY = 0 
-        } Else {
-            $Script:Player.Y          = $NextY
-            $Script:Player.IsGrounded = $false
-        }
+        & $Script:TheGameStateTable[$Script:GlobalState]
 
         Draw-Screen
 
         Start-Sleep -Milliseconds $Script:GAME_SPEED
     }
-
-    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
-    If($Script:Victory) {
-        Write-Host 'GOT ''EM!' -ForegroundColor Green
-    } Else {
-        Write-Host 'YOU SUCK!' -ForegroundColor Yellow
-    }
-} Finally {
-    [Console]::CursorVisible = $true
-}
+} Finally {}
