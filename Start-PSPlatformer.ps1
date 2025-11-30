@@ -34,7 +34,7 @@ Enum GameState {
 [Int]$Script:CurrentLevel = -1
 [Int]$Script:MapHeight = 0
 [Int]$Script:MapWidth = 0
-[Boolean]$Script:Running = 0
+[Boolean]$Script:Running = $true
 
 [GameState]$Script:GlobalState = [GameState]::Init
 [GameState]$Script:PreviousGlobalState = $Script:GlobalState
