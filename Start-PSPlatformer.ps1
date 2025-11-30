@@ -1,6 +1,10 @@
 using namespace System
 using namespace System.Collections.Generic
 
+If($IsWindows -EQ $true) {
+    Add-Type -AssemblyName PresentationCore
+}
+
 Set-StrictMode -Version Latest
 
 ###############################################################################
@@ -35,9 +39,18 @@ Enum GameState {
 [Int]$Script:MapHeight = 0
 [Int]$Script:MapWidth = 0
 [Boolean]$Script:Running = $true
+[Boolean]$Script:JumpSfxPlaying = $false
+[Boolean]$Script:DamageSfxPlaying = $false
+[Boolean]$Script:GoalSfxPlaying = $false
 
 [GameState]$Script:GlobalState = [GameState]::Init
 [GameState]$Script:PreviousGlobalState = $Script:GlobalState
+
+[Object]$Script:SfxPlayer = $null
+
+If($IsWindows -EQ $true) {
+    $Script:SfxPlayer = [System.Media.SoundPlayer]::new()
+}
 
 [ScriptBlock]$Script:GameStateInitAction = {
     # DON'T DO ANYTHING HERE OTHER THAN TRANSITION THE STATE
@@ -115,6 +128,12 @@ Enum GameState {
 
     # JUMP HANDLER
     If($Key -EQ "Spacebar" -AND $Script:Player.IsGrounded) {
+        If($IsWindows -EQ $true -AND $Script:JumpSfxPlaying -EQ $false) {
+            $Script:SfxPlayer.SoundLocation = "$($PSScriptRoot)\Resources\SFX\Jump\Jump0001.wav"
+            $Script:SfxPlayer.LoadAsync()
+            $Script:SfxPlayer.Play()
+            $Script:JumpSfxPlaying = $true
+        }
         $Script:Player.VY         = $Script:JUMP_STRENGTH
         $Script:Player.IsGrounded = $false
     }
@@ -127,6 +146,10 @@ Enum GameState {
         # MOVING DOWN...
         If($Script:Player.VY -GT 0) {
             $Script:Player.IsGrounded = $true
+            
+            If($IsWindows -EQ $true) {
+                $Script:JumpSfxPlaying = $false
+            }
         }
 
         # MOVING UP...
@@ -138,6 +161,10 @@ Enum GameState {
 }
 
 [ScriptBlock]$Script:GameStateGameWinAction = {
+    If($IsWindows -EQ $true) {
+        $Script:GoalSfxPlaying = $false
+    }
+    
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
     Write-Host 'GOT ''EM!' -ForegroundColor Green
     
@@ -150,6 +177,10 @@ Enum GameState {
 }
 
 [ScriptBlock]$Script:GameStateGameLoseAction = {
+    If($IsWindows -EQ $true) {
+        $Script:DamageSfxPlaying = $false
+    }
+    
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
     Write-Host 'YOU SUCK!' -ForegroundColor Red
 
@@ -353,12 +384,24 @@ Function Test-Collision {
     [Char]$C = $Script:LevelData[$Script:CurrentLevel][$Y][$X]
     
     If($C -EQ 'X') {
+        If($IsWindows -EQ $true -AND $Script:GoalSfxPlaying -EQ $false) {
+            $Script:SfxPlayer.SoundLocation = "$($PSScriptRoot)\Resources\SFX\Pickup\Pickup0001.wav"
+            $Script:SfxPlayer.LoadAsync()
+            $Script:SfxPlayer.Play()
+            $Script:GoalSfxPlaying = $true
+        }
         Set-NextGameState GameWin
 
         Return $false
     }
     
     If($C -EQ '^') {
+        If($IsWindows -EQ $true -AND $Script:DamageSfxPlaying -EQ $false) {
+            $Script:SfxPlayer.SoundLocation = "$($PSScriptRoot)\Resources\SFX\Damage\Damage029.wav"
+            $Script:SfxPlayer.LoadAsync()
+            $Script:SfxPlayer.Play()
+            $Script:DamageSfxPlaying = $true
+        }
         Set-NextGameState GameLose
         
         Return $false
