@@ -41,7 +41,7 @@ Fortunately, the code is _extremely_ simple to follow along with. If you ever ha
 # Credits
 
 * Myself - I can't ever miss an opportunity to pat myself on the back.
-* PLAkira - Connesseur of fine PowerShell work, which is why he had me on the show.
+* PLAkira - Connesseur of fine PowerShell work, which is why he had me on the show (then abandoned me ~20 mins. in).
 * MarkG0 - Double jumping his way through all kinds of custom levels, and has great socks.
 * Morten - Reminding me of the value of Pester testing. Also, possibly the only man to be yeet'd through a try-catch block.
 * Horse - Testing in Desktop, now! Also, one of the finest ASCII artists I know.
