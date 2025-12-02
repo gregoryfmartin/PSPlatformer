@@ -4,6 +4,26 @@ A platformer? In PowerShell? ARE U NUTS!?
 
 Turns out, yeah, I am.
 
+## System Requirements
+
+PSPlatformer will likely run anywhere PowerShell runs, but the following are what I know it's been tested on:
+
+* Windows 10/11; Mac
+* Recent version of Windows Terminal; iTerm2
+* .NET 9 and 10
+* PowerShell 7.6.0 Preview (the 7.5.X branch will work as well)
+
+PSPlatformer has a few PowerShell Module dependencies:
+
+* PSRainbow
+* FancyClearHost
+
+Both of these are available from the PowerShell Gallery:
+
+```powershell
+Install-Module PSRainbow, FancyClearHost
+```
+
 ## What Even Is This?
 
 I've spent the past few years working on Eldoria, a PowerShell RPG game, and I needed to take a break from it. This is what happened.
@@ -11,6 +31,8 @@ I've spent the past few years working on Eldoria, a PowerShell RPG game, and I n
 Not like this is a HUGE accomplishment or anything like that, but it's just good fun. A way for me to write some code that myself and others can enjoy at their leisure.
 
 The goal is simple: move your character to the X (because it marks the spot, duh).
+
+There's a few levels. The mechanics are still a little jank, but you can modify the game to win! Or you can work on the mechanics! Take your pick!
 
 ## Yeah, But What About The "Game"?
 
@@ -45,4 +67,5 @@ Fortunately, the code is _extremely_ simple to follow along with. If you ever ha
 * MarkG0 - Double jumping his way through all kinds of custom levels, and has great socks.
 * Morten - Reminding me of the value of Pester testing. Also, possibly the only man to be yeet'd through a try-catch block.
 * Horse - Testing in Desktop, now! Also, one of the finest ASCII artists I know.
+* mdgrs - Author of FancyClearHost and many other extremely fine PowerShell products.
 * PDQ Discord - For real, some of the finest human beings on the planet. Much love.
