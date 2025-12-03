@@ -21,3 +21,8 @@ Class Player {
         $this.LineColor  = $Global:PSRainbowColors.SpringGreen
     }
 }
+
+[Player]$Script:ThePlayer = [Player]@{
+    X = 2
+    Y = 2
+}

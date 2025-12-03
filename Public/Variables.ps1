@@ -23,8 +23,6 @@ Set-StrictMode -Version Latest
 
 [Hashtable]$Script:TheGameStateTable = @{}
 
-[Player]$Script:ThePlayer = $null
-
 . "$($PSScriptRoot)\LevelData.ps1"
 
 [ScriptBlock]$Script:GameStateInitAction = {
@@ -138,13 +136,26 @@ Set-StrictMode -Version Latest
 
     # JUMP HANDLER
     If($Key -EQ "Spacebar" -AND $Script:ThePlayer.IsGrounded) {
-        Start-SfxPlayback "$($PSScriptRoot)\..\Resources\SFX\Jump\Jump0001.wav" $Script:JumpSfxPlaying
-        $Script:ThePlayer.VY         = $Script:JUMP_STRENGTH
-        $Script:ThePlayer.IsGrounded = $false
+        # CHECK FOR A FLOOR DIRECTLY ABOVE THE PLAYER
+        # THIS IS PROBABLY A REALLY BAD WAY TO CHECK FOR THIS STATE,
+        # BUT IDGAF
+        
+        # BIIIIIG NOPE HERE! LOOK DOWN!
+        # STILL HAVE THE N + 2 BUG WITH THE JUMPING. I DIDN'T WANT TO DO THIS,
+        # BUT I THINK I'LL HAVE TO CHECK THE ENTIRE PROJECTED SEGMENT FOR COLLISIONS
+        If((Test-Collision $Script:ThePlayer.X ($Script:ThePlayer.Y - 1)) -EQ $false) {
+            Start-SfxPlayback "$($PSScriptRoot)\..\Resources\SFX\Jump\Jump0001.wav" $Script:JumpSfxPlaying
+
+            $Script:ThePlayer.VY         = $Script:JUMP_STRENGTH
+            $Script:ThePlayer.IsGrounded = $false
+        }
     }
 
     # APPLY VERTICAL VELOCITY
-    [Int]$NextY = $Script:ThePlayer.Y + $Script:ThePlayer.VY
+    # COMMENTED OUT. WE'RE STEPPING INDIVIDUAL CELLS TO ENSURE
+    # MID JUMPS ARE SUPPORTED.
+    # [Int]$NextY = $Script:ThePlayer.Y + $Script:ThePlayer.VY
+    [Int]$NextY = $Script:ThePlayer.Y + [Math]::Sign($Script:ThePlayer.VY)
     
     # VERTICAL COLLISION DETECTION ATTEMPT...
     If(Test-Collision $Script:ThePlayer.X $NextY) {
