@@ -44,6 +44,7 @@ Function Draw-Screen {
         $Frame.Add([String]::new("$($AddToFrame)$([String]::new($Line))"))
     }
 
+    $Frame.Add("$($Script:MapNames[$Script:CurrentLevel])")
     $Frame.Add("POS: $($Script:ThePlayer.X),$($Script:ThePlayer.Y) | SPACE: Jump | Q: Quit ")
     
     ForEach($L in $Frame) {
