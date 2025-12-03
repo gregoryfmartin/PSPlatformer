@@ -201,7 +201,7 @@ Set-StrictMode -Version Latest
 }
 
 [ScriptBlock]$Script:GameStateDeinitAction = {
-    [Console]::CursorVisible = $true
+    Write-Host "`e[?25l"
     $Script:Running = $false
 }
 
