@@ -202,7 +202,8 @@ STARTS THE PSPLATFORMER GAME.
 #>
 Function Start-PSPlatformer {
     Clear-Host; Write-Host "`e[?25l"
-    
+ 
+    <#   
     While($Script:Running -EQ $true) {
         & $Script:TheGameStateTable[$Script:GlobalState]
 
@@ -210,6 +211,8 @@ Function Start-PSPlatformer {
 
         Start-Sleep -Milliseconds $Script:GAME_SPEED
     }
+    
 
     Clear-Host
+    #>
 }

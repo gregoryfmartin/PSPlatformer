@@ -56,10 +56,6 @@ Set-StrictMode -Version Latest
     }
 
     # NON-OS SPECIFIC INIT CODE HERE
-    $Script:ThePlayer = [Player]@{
-        X = 2
-        Y = 2
-    }
 
     Set-NextGameState SetupMap
 }
