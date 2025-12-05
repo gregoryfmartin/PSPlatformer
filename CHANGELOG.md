@@ -30,3 +30,9 @@
 ### Changed
 
 - Cleared map status when level changes.
+
+## 0.4.0
+
+### Added
+
+- Fixed 60FPS frame rate loop timing.
