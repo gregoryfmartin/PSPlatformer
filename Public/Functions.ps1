@@ -204,11 +204,16 @@ Function Start-PSPlatformer {
     Clear-Host; Write-Host "`e[?25l"
  
     While($Script:Running -EQ $true) {
+        $Script:FrameStartMs = $Script:TheTicker.ElapsedTicks
+        
         & $Script:TheGameStateTable[$Script:GlobalState]
 
         Draw-Screen
 
-        Start-Sleep -Milliseconds $Script:GAME_SPEED
+        $Script:FrameEndMs   = $Script:TheTicker.ElapsedTicks
+        $Script:FrameDelayMs = $Script:FrameMs - ($Script:FrameEndMs - $Script:FrameStartMs)
+        
+        Start-Sleep -Milliseconds $Script:FrameDelayMs
     }
     
     Clear-Host

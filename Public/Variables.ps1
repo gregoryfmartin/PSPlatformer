@@ -1,18 +1,23 @@
 using namespace System
+using namespace System.Diagnostics
 
 Set-StrictMode -Version Latest
 
 [Int]    $Script:GRAVITY          = 1
 [Int]    $Script:JUMP_STRENGTH    = -4
 [Int]    $Script:MAX_FALL_SPEED   = 1
-[Int]    $Script:GAME_SPEED       = 30
 [Int]    $Script:CurrentLevel     = -1
 [Int]    $Script:MapHeight        = 0
 [Int]    $Script:MapWidth         = 0
+[Int]    $Script:TargetFps        = 60
 [Boolean]$Script:Running          = $true
 [Boolean]$Script:JumpSfxPlaying   = $false
 [Boolean]$Script:DamageSfxPlaying = $false
 [Boolean]$Script:GoalSfxPlaying   = $false
+[Long]   $Script:FrameMs          = 1000.0 / $Script:TargetFps
+[Long]   $Script:FrameStartMs     = 0
+[Long]   $Script:FrameEndMs       = 0
+[Long]   $Script:FrameDelayMs     = 0
 
 [GameState]$Script:GlobalState         = [GameState]::Init
 [GameState]$Script:PreviousGlobalState = $Script:GlobalState
@@ -22,6 +27,8 @@ Set-StrictMode -Version Latest
 [String]$Script:PwshEdition = $PSVersionTable.PSEdition
 
 [Hashtable]$Script:TheGameStateTable = @{}
+
+[Stopwatch]$Script:TheTicker = [Stopwatch]::new()
 
 . "$($PSScriptRoot)\LevelData.ps1"
 
@@ -85,6 +92,9 @@ Set-StrictMode -Version Latest
     
     # CLEAR THE LEVEL STATUS LINE
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2); Write-Host '          '
+    
+    # START THE TICKER
+    $Script:TheTicker.Reset()
     
     # TRANSITION TO THE NEXT STATE
     Set-NextGameState GameLoop
