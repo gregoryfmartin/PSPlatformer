@@ -83,6 +83,9 @@ Set-StrictMode -Version Latest
         }
     }
     
+    # CLEAR THE LEVEL STATUS LINE
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2); Write-Host '          '
+    
     # TRANSITION TO THE NEXT STATE
     Set-NextGameState GameLoop
 }
@@ -173,8 +176,7 @@ Set-StrictMode -Version Latest
 [ScriptBlock]$Script:GameStateGameWinAction = {
     Stop-SfxPlayback $Script:GoalSfxPlaying
     
-    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
-    Write-Host 'GOT ''EM!' -ForegroundColor Green
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2); Write-Host 'GOT ''EM!' -ForegroundColor Green
     
     If($Script:CurrentLevel -LT $Script:LevelData.Length - 1) {
         Start-Sleep -Seconds 1.0
@@ -187,8 +189,7 @@ Set-StrictMode -Version Latest
 [ScriptBlock]$Script:GameStateGameLoseAction = {
     Stop-SfxPlayback $Script:DamageSfxPlaying
     
-    [Console]::SetCursorPosition(0, $Script:MapHeight + 2)
-    Write-Host 'YOU SUCK!' -ForegroundColor Red
+    [Console]::SetCursorPosition(0, $Script:MapHeight + 2); Write-Host 'YOU SUCK!' -ForegroundColor Red
 
     Start-Sleep -Seconds 1.0
     

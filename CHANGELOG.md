@@ -21,6 +21,12 @@
 
 ### Changed
 
-- Added more levels
-- Added map names
-- Added map names displayed in the Draw-Frame function
+- Added more levels.
+- Added map names.
+- Added map names displayed in the Draw-Frame function.
+
+## 0.3.1
+
+### Changed
+
+- Cleared map status when level changes.
