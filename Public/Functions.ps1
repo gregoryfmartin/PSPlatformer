@@ -46,6 +46,8 @@ Function Draw-Screen {
 
     $Frame.Add("$($Script:MapNames[$Script:CurrentLevel])")
     $Frame.Add("POS: $($Script:ThePlayer.X),$($Script:ThePlayer.Y) | SPACE: Jump | Q: Quit ")
+    [String]$FpsData = "{0:d2}" -F $Script:CurrentFps
+    $Frame.Add($FpsData)
     
     ForEach($L in $Frame) {
         If($L -MATCH 'X') {
@@ -212,6 +214,7 @@ Function Start-PSPlatformer {
 
         $Script:FrameEndMs   = $Script:TheTicker.ElapsedTicks
         $Script:FrameDelayMs = $Script:FrameMs - ($Script:FrameEndMs - $Script:FrameStartMs)
+        $Script:CurrentFps   = ($Script:FrameEndMs - $Script:FrameStartMs) / 1000.0
         
         Start-Sleep -Milliseconds $Script:FrameDelayMs
     }

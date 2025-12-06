@@ -18,6 +18,7 @@ Set-StrictMode -Version Latest
 [Long]   $Script:FrameStartMs     = 0
 [Long]   $Script:FrameEndMs       = 0
 [Long]   $Script:FrameDelayMs     = 0
+[Float]  $Script:CurrentFps       = 0.0
 
 [GameState]$Script:GlobalState         = [GameState]::Init
 [GameState]$Script:PreviousGlobalState = $Script:GlobalState
