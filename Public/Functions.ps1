@@ -1,4 +1,6 @@
 using namespace System
+using namespace System.Threading
+using namespace System.Diagnostics
 using namespace System.Collections.Generic
 
 Set-StrictMode -Version Latest
@@ -46,8 +48,8 @@ Function Draw-Screen {
 
     $Frame.Add("$($Script:MapNames[$Script:CurrentLevel])")
     $Frame.Add("POS: $($Script:ThePlayer.X),$($Script:ThePlayer.Y) | SPACE: Jump | Q: Quit ")
-    [String]$FpsData = "{0:d2}" -F $Script:CurrentFps
-    $Frame.Add($FpsData)
+    [String]$FpsStr = "{0:N2}" -F $Script:CurrentFps
+    $Frame.Add("$($FpsStr)")
     
     ForEach($L in $Frame) {
         If($L -MATCH 'X') {
@@ -204,19 +206,21 @@ STARTS THE PSPLATFORMER GAME.
 #>
 Function Start-PSPlatformer {
     Clear-Host; Write-Host "`e[?25l"
+    $Script:TheTicker.Start()
  
     While($Script:Running -EQ $true) {
-        $Script:FrameStartMs = $Script:TheTicker.ElapsedTicks
+        $Script:FrameStart = $Script:TheTicker.ElapsedTicks
         
         & $Script:TheGameStateTable[$Script:GlobalState]
 
         Draw-Screen
-
-        $Script:FrameEndMs   = $Script:TheTicker.ElapsedTicks
-        $Script:FrameDelayMs = $Script:FrameMs - ($Script:FrameEndMs - $Script:FrameStartMs)
-        $Script:CurrentFps   = ($Script:FrameEndMs - $Script:FrameStartMs) / 1000.0
         
-        Start-Sleep -Milliseconds $Script:FrameDelayMs
+        $Script:FrameEnd   = $Script:TheTicker.ElapsedTicks
+        $Script:FrameDelta = [Stopwatch]::GetElapsedTime($Script:FrameStart, $Script:FrameEnd)
+        $Script:CurrentFps = 1.0 / ($Script:FrameDelta.Ticks / [Stopwatch]::Frequency)
+        $Script:SleepTime = [Math]::Max(0, ($Script:TargetFrameTicks - $Script:FrameDelta.TotalMilliseconds))
+        
+        [Thread]::Sleep([TimeSpan]::FromMilliseconds($Script:SleepTime))
     }
     
     Clear-Host

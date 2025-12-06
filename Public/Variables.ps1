@@ -3,22 +3,23 @@ using namespace System.Diagnostics
 
 Set-StrictMode -Version Latest
 
-[Int]    $Script:GRAVITY          = 1
-[Int]    $Script:JUMP_STRENGTH    = -4
-[Int]    $Script:MAX_FALL_SPEED   = 1
-[Int]    $Script:CurrentLevel     = -1
-[Int]    $Script:MapHeight        = 0
-[Int]    $Script:MapWidth         = 0
-[Int]    $Script:TargetFps        = 60
-[Boolean]$Script:Running          = $true
-[Boolean]$Script:JumpSfxPlaying   = $false
-[Boolean]$Script:DamageSfxPlaying = $false
-[Boolean]$Script:GoalSfxPlaying   = $false
-[Long]   $Script:FrameMs          = 1000.0 / $Script:TargetFps
-[Long]   $Script:FrameStartMs     = 0
-[Long]   $Script:FrameEndMs       = 0
-[Long]   $Script:FrameDelayMs     = 0
-[Float]  $Script:CurrentFps       = 0.0
+[Int]     $Script:GRAVITY          = 1
+[Int]     $Script:JUMP_STRENGTH    = -4
+[Int]     $Script:MAX_FALL_SPEED   = 1
+[Int]     $Script:CurrentLevel     = -1
+[Int]     $Script:MapHeight        = 0
+[Int]     $Script:MapWidth         = 0
+[Int]     $Script:TargetFps        = 30
+[Boolean] $Script:Running          = $true
+[Boolean] $Script:JumpSfxPlaying   = $false
+[Boolean] $Script:DamageSfxPlaying = $false
+[Boolean] $Script:GoalSfxPlaying   = $false
+[Float]   $Script:TargetFrameTicks = 1000.0 / $Script:TargetFps
+[Float]   $Script:CurrentFps       = 0.0
+[TimeSpan]$Script:FrameDelta       = [TimeSpan]::new(0)
+[Long]    $Script:FrameStart       = 0
+[Long]    $Script:FrameEnd         = 0
+[Double]  $Script:SleepTime        = 0
 
 [GameState]$Script:GlobalState         = [GameState]::Init
 [GameState]$Script:PreviousGlobalState = $Script:GlobalState
@@ -93,9 +94,6 @@ Set-StrictMode -Version Latest
     
     # CLEAR THE LEVEL STATUS LINE
     [Console]::SetCursorPosition(0, $Script:MapHeight + 2); Write-Host '          '
-    
-    # START THE TICKER
-    $Script:TheTicker.Reset()
     
     # TRANSITION TO THE NEXT STATE
     Set-NextGameState GameLoop
