@@ -36,3 +36,13 @@
 ### Added
 
 - Fixed 60FPS frame rate loop timing.
+
+## 0.4.1
+
+### Added
+
+- More better frame measurement and capping.
+
+### Changed
+
+- Moved from 60FPS to 30FPS. 60FPS testing yielded an uncontrollable game.
