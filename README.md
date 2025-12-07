@@ -24,6 +24,12 @@ Both of these are available from the PowerShell Gallery:
 Install-Module PSRainbow, FancyClearHost
 ```
 
+PSPlatformer is available in the PowerShell Gallery:
+
+```powershell
+Install-Module PSPlatformer
+```
+
 ## What Even Is This?
 
 I've spent the past few years working on Eldoria, a PowerShell RPG game, and I needed to take a break from it. This is what happened.
