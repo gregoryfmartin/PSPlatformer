@@ -180,6 +180,9 @@ Set-StrictMode -Version Latest
         $Script:ThePlayer.Y          = $NextY
         $Script:ThePlayer.IsGrounded = $false
     }
+    
+    # PERFORM ANIMATION LOGIC UPDATES
+    $Script:ThePlayer.Symbol.Update()
 }
 
 [ScriptBlock]$Script:GameStateGameWinAction = {

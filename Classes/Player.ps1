@@ -8,7 +8,7 @@ Class Player {
     [Int]$VX
     [Int]$VY
     [Boolean]$IsGrounded
-    [Char]$Symbol
+    [AnimatedString]$Symbol
     [Object]$LineColor
 
     Player() {
@@ -17,8 +17,11 @@ Class Player {
         $this.VX         = 0
         $this.VY         = 0
         $this.IsGrounded = $false
-        $this.Symbol     = '!'
         $this.LineColor  = $Global:PSRainbowColors.SpringGreen
+        $this.Symbol     = [AnimatedString]@{
+            Frames        = ([Char[]]('A'..'Z') + ('!', '@', '%', '&'))
+            FrameDuration = 60.0
+        }
     }
 }
 

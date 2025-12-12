@@ -2,6 +2,8 @@ Set-StrictMode -Version Latest
 
 . "$($PSScriptRoot)\Enums\GameState.ps1"
 
+. "$($PSScriptRoot)\Classes\AnimatedString.ps1"
+
 . "$($PSScriptRoot)\Classes\Player.ps1"
 
 . "$($PSScriptRoot)\Public\Variables.ps1"

@@ -38,7 +38,7 @@ Function Draw-Screen {
         # DRAW PLAYER IF ON THIS LINE
         If($Y -EQ $Script:ThePlayer.Y) {
             If($Script:ThePlayer.X -GE 0 -AND $Script:ThePlayer.X -LT $Line.Length) {
-                $Line[$Script:ThePlayer.X] = $Script:ThePlayer.Symbol
+                $Line[$Script:ThePlayer.X] = [String]::new($Script:ThePlayer.Symbol.GetCurrentFrame())
             }
             $AddToFrame = "$(Format-ConsoleColor24 -Color $Script:ThePlayer.LineColor -Type Fg)"
         }
@@ -202,7 +202,7 @@ Function Invoke-SfxPlayer {
 
 <#
 .SYNOPSIS
-STARTS THE PSPLATFORMER GAME.
+STARTS THE PLATFORMER GAME.
 #>
 Function Start-PSPlatformer {
     Clear-Host; Write-Host "`e[?25l"
@@ -218,7 +218,7 @@ Function Start-PSPlatformer {
         $Script:FrameEnd   = $Script:TheTicker.ElapsedTicks
         $Script:FrameDelta = [Stopwatch]::GetElapsedTime($Script:FrameStart, $Script:FrameEnd)
         $Script:CurrentFps = 1.0 / ($Script:FrameDelta.Ticks / [Stopwatch]::Frequency)
-        $Script:SleepTime = [Math]::Max(0, ($Script:TargetFrameTicks - $Script:FrameDelta.TotalMilliseconds))
+        $Script:SleepTime  = [Math]::Max(0, ($Script:TargetFrameTicks - $Script:FrameDelta.TotalMilliseconds))
         
         [Thread]::Sleep([TimeSpan]::FromMilliseconds($Script:SleepTime))
     }
