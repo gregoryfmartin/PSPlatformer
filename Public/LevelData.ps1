@@ -304,6 +304,8 @@
     )
 )
 
+[String[][]]$Script:LevelDisplayData = @()
+
 [String[]]$Script:MapNames = @(
     'Babby Steps        ',
     'Stairway Simulator ',

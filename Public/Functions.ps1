@@ -200,28 +200,48 @@ Function Invoke-SfxPlayer {
     }
 }
 
+Function Restore-InitialGameState {
+    $Script:CurrentLevel = -1
+    $Script:TheTicker.Stop()
+    $Script:TheTicker = [Stopwatch]::new()
+    $Script:GlobalState = [GameState]::Init
+    $Script:PreviousState = [GameState]::Init
+    $Script:Running = $true
+    $Script:ThePlayer = [Player]@{
+        X = 2
+        Y = 2
+    }
+    
+    # RELOAD THE RAW LEVEL DATA
+    . "$($PSScriptRoot)\LevelData.ps1"
+}
+
 <#
 .SYNOPSIS
 STARTS THE PLATFORMER GAME.
 #>
 Function Start-PSPlatformer {
-    Clear-Host; Write-Host "`e[?25l"
-    $Script:TheTicker.Start()
+    Try {
+        Clear-Host; Write-Host "`e[?25l"
+        $Script:TheTicker.Start()
  
-    While($Script:Running -EQ $true) {
-        $Script:FrameStart = $Script:TheTicker.ElapsedTicks
+        While($Script:Running -EQ $true) {
+            $Script:FrameStart = $Script:TheTicker.ElapsedTicks
         
-        & $Script:TheGameStateTable[$Script:GlobalState]
+            & $Script:TheGameStateTable[$Script:GlobalState]
 
-        Draw-Screen
+            Draw-Screen
         
-        $Script:FrameEnd   = $Script:TheTicker.ElapsedTicks
-        $Script:FrameDelta = [Stopwatch]::GetElapsedTime($Script:FrameStart, $Script:FrameEnd)
-        $Script:CurrentFps = 1.0 / ($Script:FrameDelta.Ticks / [Stopwatch]::Frequency)
-        $Script:SleepTime  = [Math]::Max(0, ($Script:TargetFrameTicks - $Script:FrameDelta.TotalMilliseconds))
+            $Script:FrameEnd   = $Script:TheTicker.ElapsedTicks
+            $Script:FrameDelta = [Stopwatch]::GetElapsedTime($Script:FrameStart, $Script:FrameEnd)
+            $Script:CurrentFps = 1.0 / ($Script:FrameDelta.Ticks / [Stopwatch]::Frequency)
+            $Script:SleepTime  = [Math]::Max(0, ($Script:TargetFrameTicks - $Script:FrameDelta.TotalMilliseconds))
         
-        [Thread]::Sleep([TimeSpan]::FromMilliseconds($Script:SleepTime))
-    }
+            [Thread]::Sleep([TimeSpan]::FromMilliseconds($Script:SleepTime))
+        }
+    } Finally {
+        Restore-InitialGameState
     
-    Clear-Host
+        Clear-Host
+    }
 }

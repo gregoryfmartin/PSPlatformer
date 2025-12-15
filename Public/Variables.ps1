@@ -210,7 +210,7 @@ Set-StrictMode -Version Latest
 }
 
 [ScriptBlock]$Script:GameStateDeinitAction = {
-    Write-Host "`e[?25l"
+    Write-Host "`e[?25h"
     $Script:Running = $false
 }
 
