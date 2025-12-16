@@ -202,14 +202,19 @@ Function Invoke-SfxPlayer {
     }
 }
 
+<#
+.SYNOPSIS
+RESETS THE GAME STATE AFTER THE GAME LOOP ENDS SO THAT THE MODULE DOESN'T NEED
+TO BE UNLOADED AFTER THE GAME ENDS FOR WHATEVER THE REASON.
+#>
 Function Restore-InitialGameState {
     $Script:CurrentLevel = -1
     $Script:TheTicker.Stop()
-    $Script:TheTicker = [Stopwatch]::new()
-    $Script:GlobalState = [GameState]::Init
+    $Script:TheTicker     = [Stopwatch]::new()
+    $Script:GlobalState   = [GameState]::Init
     $Script:PreviousState = [GameState]::Init
-    $Script:Running = $true
-    $Script:ThePlayer = [Player]@{
+    $Script:Running       = $true
+    $Script:ThePlayer     = [Player]@{
         X = 2
         Y = 2
     }
