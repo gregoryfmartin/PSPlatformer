@@ -52,3 +52,4 @@
 ## Changed
 
 - Fixed a bug that permitted restarting the game without re-importing the module (credit to trackd for picking this up and working with me on it).
+- Added ANSI Synchronized Output sequence to drawing for optimized drawing (credit to trackd for adding this).

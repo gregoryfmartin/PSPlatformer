@@ -52,6 +52,7 @@ Function Draw-Screen {
     $Frame.Add("$($FpsStr)")
     
     ForEach($L in $Frame) {
+        Write-Host "`e[?2026h" -NoNewline
         If($L -MATCH 'X') {
             Write-Host $L -ForegroundColor Yellow -NoNewline
         } ElseIf($L -MATCH $Script:ThePlayer.Symbol) { 
@@ -59,6 +60,7 @@ Function Draw-Screen {
         } Else {
             Write-Host $L -ForegroundColor Gray -NoNewline
         }
+        Write-Host "`e[?2026l" -NoNewline
         
         Write-Host ''
     }
