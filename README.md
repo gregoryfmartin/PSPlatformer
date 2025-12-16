@@ -74,4 +74,5 @@ Fortunately, the code is _extremely_ simple to follow along with. If you ever ha
 * Morten - Reminding me of the value of Pester testing. Also, possibly the only man to be yeet'd through a try-catch block.
 * Horse - Testing in Desktop, now! Also, one of the finest ASCII artists I know.
 * mdgrs - Author of FancyClearHost and many other extremely fine PowerShell products.
+* trackd - Helped out with a bug related to the deinit routine to allow restarting the game without re-importing the module.
 * PDQ Discord - For real, some of the finest human beings on the planet. Much love.

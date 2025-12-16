@@ -46,3 +46,9 @@
 ### Changed
 
 - Moved from 60FPS to 30FPS. 60FPS testing yielded an uncontrollable game.
+
+## 0.5.0
+
+## Changed
+
+- Fixed a bug that permitted restarting the game without re-importing the module (credit to trackd for picking this up and working with me on it).
